@@ -1,0 +1,24 @@
+{
+  "name": "ts-monad-sample-code",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p .",
+    "start": "tsx src/index.ts",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "neverthrow": "^6.2.2",
+    "p-limit": "^4.0.0",
+    "pino": "^9.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

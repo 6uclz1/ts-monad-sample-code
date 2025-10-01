@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": false,
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "types": ["vitest/importMeta"]
+  },
+  "include": ["src", "test"],
+  "exclude": ["dist", "node_modules"]
+}
