@@ -4,18 +4,18 @@ This project demonstrates a production-minded CSV ingestion pipeline built with 
 
 ```mermaid
 flowchart LR
-    csv[CSV IO<br/>(csv.ts)] --> validation[Validation<br/>(zod)]
-    validation --> policies[Policy Gate<br/>(policies.ts)]
-    policies --> control[Rate & Retry<br/>(rateLimit.ts / retry.ts)]
-    control --> repo[Persistence & Reporting<br/>(repo.*, report.ts)]
+    csv["CSV IO\n(csv.ts)"] --> validation["Validation\n(zod)"]
+    validation --> policies["Policy Gate\n(policies.ts)"]
+    policies --> control["Rate & Retry\n(rateLimit.ts / retry.ts)"]
+    control --> repo["Persistence & Reporting\n(repo.*, report.ts)"]
     subgraph Observability
-        logger[Tracing & Logs<br/>(logger.ts)]
+        logger["Tracing & Logs\n(logger.ts)"]
     end
-    csv -. spanId .-> logger
-    validation -. spanId .-> logger
-    policies -. spanId .-> logger
-    control -. spanId .-> logger
-    repo -. spanId .-> logger
+    csv -. "spanId" .-> logger
+    validation -. "spanId" .-> logger
+    policies -. "spanId" .-> logger
+    control -. "spanId" .-> logger
+    repo -. "spanId" .-> logger
 ```
 
 ## Features

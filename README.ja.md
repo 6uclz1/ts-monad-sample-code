@@ -4,18 +4,18 @@ TypeScript と neverthrow を用いた、運用志向の CSV 取込パイプラ�
 
 ```mermaid
 flowchart LR
-    csv[CSV IO<br/>(csv.ts)] --> validation[バリデーション<br/>(zod)]
-    validation --> policies[ポリシー判定<br/>(policies.ts)]
-    policies --> control[レート & リトライ<br/>(rateLimit.ts / retry.ts)]
-    control --> repo[永続化 & レポート<br/>(repo.*, report.ts)]
+    csv["CSV IO\n(csv.ts)"] --> validation["バリデーション\n(zod)"]
+    validation --> policies["ポリシー判定\n(policies.ts)"]
+    policies --> control["レート & リトライ\n(rateLimit.ts / retry.ts)"]
+    control --> repo["永続化 & レポート\n(repo.*, report.ts)"]
     subgraph 観測
-        logger[ログ/トレース<br/>(logger.ts)]
+        logger["ログ/トレース\n(logger.ts)"]
     end
-    csv -. spanId .-> logger
-    validation -. spanId .-> logger
-    policies -. spanId .-> logger
-    control -. spanId .-> logger
-    repo -. spanId .-> logger
+    csv -. "spanId" .-> logger
+    validation -. "spanId" .-> logger
+    policies -. "spanId" .-> logger
+    control -. "spanId" .-> logger
+    repo -. "spanId" .-> logger
 ```
 
 ## 特長
