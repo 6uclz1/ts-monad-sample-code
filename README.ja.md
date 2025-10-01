@@ -2,13 +2,20 @@
 
 TypeScript と neverthrow を用いた、運用志向の CSV 取込パイプラインの最小実装です。宣言的なパイプライン構成、厳格なバリデーション、リトライ/レート制御、冪等な永続化、構造化ログを組み合わせています。
 
-```
-+----------+      +-------------+      +-------------+      +---------------+      +-----------+
-|  CSV IO  | ---> | Validation  | ---> | Policy Gate | ---> | Rate + Retry  | ---> |  Repo +   |
-| (csv.ts) |      | (zod)       |      | (policies)  |      | (retry.ts)    |      | Reporting |
-+----------+      +-------------+      +-------------+      +---------------+      +-----------+
-                                                   \___________________________________________/
-                                                              監査ログ: pino (logger.ts)
+```mermaid
+flowchart LR
+    csv[CSV IO<br/>(csv.ts)] --> validation[バリデーション<br/>(zod)]
+    validation --> policies[ポリシー判定<br/>(policies.ts)]
+    policies --> control[レート & リトライ<br/>(rateLimit.ts / retry.ts)]
+    control --> repo[永続化 & レポート<br/>(repo.*, report.ts)]
+    subgraph 観測
+        logger[ログ/トレース<br/>(logger.ts)]
+    end
+    csv -. spanId .-> logger
+    validation -. spanId .-> logger
+    policies -. spanId .-> logger
+    control -. spanId .-> logger
+    repo -. spanId .-> logger
 ```
 
 ## 特長
@@ -21,6 +28,15 @@ TypeScript と neverthrow を用いた、運用志向の CSV 取込パイプラ�
 - レポートは取込件数、勝ち負け内訳、ドメイン分布、失敗サマリを表示。
 - Vitest によるバリデーション境界・リトライ制御・冪等性・E2E のテストを同梱。
 
+## プロジェクト構成
+
+- `src/app/`: パイプライン合成、レポート、エラー定義。
+- `src/domain/`: ドメイン型、Zod スキーマ、ポリシー判定。
+- `src/infra/`: ロガー、レート制御、リトライ、リポジトリなどのインフラ層。
+- `src/utils/`: CSV パーサや Result ユーティリティなどの共有処理。
+- `test/`: Vitest テスト（`*.unit.test.ts` / `*.int.test.ts`）。
+- `src/types/env.d.ts`: 環境変数の型補強。
+
 ## セットアップ
 
 ```bash
@@ -30,6 +46,12 @@ pnpm start -- --source samples/users.csv --idempotency batch-20240501
 ```
 
 CLI は標準入力を既定ソースとします。`cat users.csv | pnpm start -- --source -` のようにパイプ可能です。
+
+## ビルド & 開発コマンド
+
+- `pnpm build` — `tsc` で `dist/` にコンパイル。
+- `pnpm test` — Vitest を一括実行。
+- `pnpm start -- --source <path|- >` — CSV 取込パイプラインを CLI 起動。
 
 ## コンフィグ
 
@@ -43,6 +65,12 @@ CLI は標準入力を既定ソースとします。`cat users.csv | pnpm start 
 - `LOG_LEVEL`：Pino のログレベル（`info`/`debug`/`silent` など）。
 
 不正設定は `ConfigError` を返し、処理開始前に失敗を明示します。
+
+## コーディング規約
+
+- TypeScript `strict` モードが標準。`if`/`for`/`try` に頼らず、neverthrow の `Result` / `ResultAsync` を使った式ベースの分岐を徹底します。
+- 構造は `type` エイリアスで表現し、関数・変数は `camelCase`、型は `PascalCase` を使用。
+- Pino ログには `spanId` を含め、トレース性を確保します。
 
 ## 運用メモ
 
@@ -59,6 +87,13 @@ CLI は標準入力を既定ソースとします。`cat users.csv | pnpm start 
 - リトライ：初回失敗→成功、最大試行到達時の挙動。
 - リポジトリ：同一 idempotency キーでの再投入時にもレコードが増えない。
 - 結合テスト：CSV 取込からレポート出力まで。
+
+## コントリビューションの流れ
+
+- コミットメッセージは命令形（例: `Add policy handler map`）で、一貫した粒度でまとめてください。
+- Pull Request には変更概要、目的、`pnpm test` の結果、設定・CI 変更の有無を記載。
+- 関連 Issue をリンクし、CLI 出力やログ形式を変更した場合はスクリーンショットやログ抜粋を添付。
+- 新しい環境変数を導入する際は `.env.example` と `src/env.ts` / `src/config.ts` を更新してください。
 
 ## 拡張ポイント
 

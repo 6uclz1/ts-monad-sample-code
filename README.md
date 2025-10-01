@@ -2,13 +2,20 @@
 
 This project demonstrates a production-minded CSV ingestion pipeline built with TypeScript and neverthrow. It combines declarative pipeline composition, strict validation, retry/rate control, idempotent persistence, and structured logging.
 
-```
-+----------+      +-------------+      +-------------+      +---------------+      +-----------+
-|  CSV IO  | ---> | Validation  | ---> | Policy Gate | ---> | Rate + Retry  | ---> |  Repo +   |
-| (csv.ts) |      | (zod)       |      | (policies)  |      | (retry.ts)    |      | Reporting |
-+----------+      +-------------+      +-------------+      +---------------+      +-----------+
-                                                   \___________________________________________/
-                                                              audit logs via pino (logger.ts)
+```mermaid
+flowchart LR
+    csv[CSV IO<br/>(csv.ts)] --> validation[Validation<br/>(zod)]
+    validation --> policies[Policy Gate<br/>(policies.ts)]
+    policies --> control[Rate & Retry<br/>(rateLimit.ts / retry.ts)]
+    control --> repo[Persistence & Reporting<br/>(repo.*, report.ts)]
+    subgraph Observability
+        logger[Tracing & Logs<br/>(logger.ts)]
+    end
+    csv -. spanId .-> logger
+    validation -. spanId .-> logger
+    policies -. spanId .-> logger
+    control -. spanId .-> logger
+    repo -. spanId .-> logger
 ```
 
 ## Features
@@ -21,6 +28,15 @@ This project demonstrates a production-minded CSV ingestion pipeline built with 
 - Reports summarising cadence, error buckets, and domain distributions.
 - Vitest suite covering validation, retry jitter, repository idempotency, and end-to-end ingestion.
 
+## Project Structure
+
+- `src/app/`: pipeline orchestration, reporting, error taxonomy.
+- `src/domain/`: pure domain types, validation schemas, policy evaluation.
+- `src/infra/`: adapters for logging, rate limiting, retry logic, and repository implementation.
+- `src/utils/`: shared helpers such as CSV parsing and Result utilities.
+- `test/`: Vitest suites (`*.unit.test.ts`, `*.int.test.ts`) mirroring the module boundaries.
+- `src/types/env.d.ts`: type augmentation for environment variables.
+
 ## Getting Started
 
 ```bash
@@ -30,6 +46,12 @@ pnpm start -- --source samples/users.csv --idempotency batch-20240501
 ```
 
 By default the CLI reads from stdin. Use `--source -` to pipe data: `cat users.csv | pnpm start -- --source -`.
+
+## Build & Development Commands
+
+- `pnpm build` — compile TypeScript output to `dist/` via `tsc`.
+- `pnpm test` — run all Vitest suites in watchless mode.
+- `pnpm start -- --source <path|- >` — execute the ingestion pipeline.
 
 ## Configuration
 
@@ -43,6 +65,13 @@ Environment variables are validated via `zod` in `src/config.ts`. Use `.env` (se
 - `LOG_LEVEL`: pino log level (`info`, `debug`, `silent`, ...).
 
 The configuration layer rejects malformed settings early with a `ConfigError` so failures are explicit before work begins.
+
+## Coding Style & Conventions
+
+- TypeScript strict mode is enforced; prefer neverthrow `Result`/`ResultAsync` combinators to represent branching and error flows.
+- Control flow uses expression-based handlers—avoid `if`, `for`, and `try`; rely on pattern maps (`match`, handler records).
+- Define structures with `type` aliases; use `camelCase` for functions/variables and `PascalCase` for types.
+- Logging via Pino should include `spanId` for trace continuity.
 
 ## Operational Notes
 
@@ -59,6 +88,13 @@ Run the full suite with `pnpm test`. Coverage includes:
 - Retry logic (backoff & termination).
 - Repository idempotency semantics.
 - Pipeline integration from CSV through report generation.
+
+## Contributing
+
+- Follow imperative commit messages (e.g., `Add policy handler map`) and group related changes logically.
+- Describe changes, rationale, and test evidence (`pnpm test`) in pull requests; mention configuration or CI updates explicitly.
+- Link relevant issues and include screenshots or log snippets when altering CLI output or logging formats.
+- Extend `.env.example` and `src/env.ts` / `src/config.ts` when introducing new environment variables.
 
 ## Extensibility
 
